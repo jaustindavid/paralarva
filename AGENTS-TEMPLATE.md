@@ -191,3 +191,30 @@ copied from) for:
 These docs are referenced from the project's dispatches and
 should be considered required reading before contributing to any
 dispatch's brief or handoff.
+
+### Agent dispatch configuration
+
+Cuttlefish dispatched via the Agent tool edit files **directly
+in the project's main working directory** — not in an isolated
+temporary git worktree. This matches the proven Route7 working
+model (cuttlefish edit the reef, owner commits between
+dispatches).
+
+This behavior is enabled by `worktree.bgIsolation: "none"` in
+`.claude/settings.local.json`. The paralarva kit ships this file
+pre-configured; copying paralarva brings it for free.
+
+If sub-agent dispatch ever fails with a worktree-related error
+("Cannot create agent worktree: not in a git repository...") or
+if dispatched agents' edits don't appear in the main tree
+(check `~/.claude/worktrees/` to confirm), the settings file
+either isn't being read or has been overwritten. Most likely
+cause: a stale Claude Code session started before the settings
+existed. Close all sessions in the directory, open a fresh one,
+retry. (The settings file is read at session start; mid-session
+changes don't take effect.)
+
+The `.claude/settings.local.json` file is per-machine and
+gitignored — each developer / machine has their own copy. Don't
+commit it; don't share it across machines via dotfile sync
+unless you know what you're doing.

@@ -29,18 +29,29 @@ Both audiences should read the whole file. It's short (~250 lines).
 
 ## How to hatch a new project (owner's perspective)
 
-1. Copy the entire `paralarva/` folder somewhere new with a
+1. Copy the entire `paralarva/` folder (including the hidden
+   `.claude/` and `.gitignore` files) somewhere new with a
    project-appropriate name:
 
    ```sh
    cp -r path/to/paralarva/ ~/src/your-new-project/
    cd ~/src/your-new-project/
-   git init
-   git add -A && git commit -m "Initial bootstrap from paralarva"
    ```
 
+   The copy brings a pre-configured `.claude/settings.local.json`
+   that's load-bearing for the working model — it tells the
+   Claude Code harness to let dispatched cuttlefish edit the
+   main tree directly (instead of isolating them in a temporary
+   git worktree). Without this, cuttlefish writes silently land
+   in `~/.claude/worktrees/` instead of your project, and the
+   working model breaks. The kit ships it pre-configured so this
+   is automatic.
+
 2. Open a Claude session in the new directory (Claude Code, or
-   whichever client you use).
+   whichever client you use). **If you had a prior session open
+   in this directory** (e.g., during prior bootstrap attempts),
+   close it first — Claude Code caches the settings file at
+   session start and won't pick up changes mid-session.
 
 3. Point it at this README:
 
@@ -53,6 +64,47 @@ Both audiences should read the whole file. It's short (~250 lines).
 5. From there, the standard dispatch lifecycle takes over (see
    WORKING-MODEL.md): BACKLOG entries → briefs → pre-read →
    implementer cuttlefish → handoff → BACKLOG move → owner commit.
+
+### Source control (owner's call; kit-independent)
+
+The kit does NOT require git. Source-control posture is the
+owner's independent decision — git, mercurial, manual zip
+snapshots, whatever — on whatever cadence makes sense for the
+project. The cuttlefish/nautilus working model functions the
+same regardless.
+
+If you do choose git (recommended for most projects), the
+shipped `.gitignore` already excludes the right things including
+`.claude/settings.local.json` (which is per-machine and never
+committed). A reasonable first git move:
+
+```sh
+git init
+git add -A && git commit -m "Initial bootstrap from paralarva"
+```
+
+But this can happen whenever — before the first dispatch, after
+the PRD lands, or never. The kit's working model is decoupled
+from VCS choice.
+
+### Verifying agent dispatch works (one-time sanity check)
+
+After your first Claude session is open in the project, before
+any real dispatches, confirm the kit's agent-dispatch
+configuration is taking effect. Ask the nautilus:
+
+> "Spawn an agent to create file `dispatch/agent-probe.txt`
+> with content `ok`. Then verify it exists at that path in the
+> main tree (NOT under `~/.claude/worktrees/`)."
+
+If the agent succeeds AND the file appears at the project's
+own path, the configuration is working. Clean up with `rm
+dispatch/agent-probe.txt`.
+
+If the agent fails with a worktree-related error OR the file
+appears under `~/.claude/worktrees/`, the settings file isn't
+being read. Most likely cause: prior cached session. Close all
+Claude sessions in the directory, open a fresh one, retry.
 
 ---
 

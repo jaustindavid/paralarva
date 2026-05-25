@@ -1,0 +1,6 @@
+{
+  "$comment": "Per-machine Claude Code config. Do not commit — see .gitignore. The bgIsolation: 'none' setting is load-bearing for the cuttlefish/nautilus working model: it tells the Claude Code harness to let dispatched (background) sub-agents edit the project's working directory directly, instead of isolating each in a temporary git worktree. The Route7 working model relies on cuttlefish editing the main tree and the owner committing between dispatches; without this setting, that flow silently breaks. See WORKING-MODEL.md and the paralarva README for the why.",
+  "worktree": {
+    "bgIsolation": "none"
+  }
+}
