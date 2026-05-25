@@ -358,7 +358,39 @@ cost-to-pre-read.
 has no privileged access (OAuth publish runbook,
 deployment runbooks). Pre-read there is performative.
 
-### 6.5 Implementer stream stalls
+### 6.5 Briefs that hand-walk an external UI
+
+Any brief that prescribes click-by-click paths through
+a vendor console (GCP Console, Firebase Console, AWS
+Console, Stripe Dashboard, etc.) ages out quickly.
+External UIs reorganize constantly — a single execution
+session can encounter 5+ UI drifts.
+
+**The pattern**: describe **requirements** (stable: what
+state the system must be in after this step), optionally
+include a **dated breadcrumb** (current UI path, marked
+with the date last verified), and trust the executor to
+navigate. The brief sets the destination; the executor
+finds the current controls through whatever the UI is
+labeled as today.
+
+**Empirical**: flog's first ops dispatch (M1
+infrastructure) hit 7+ UI reorganizations during one
+afternoon — OAuth consent wizard condensed, Test Users
+moved under an Audience tab, Authorized Domains moved
+to a Branding sub-screen, validation tightened,
+Firebase Auth panel moved from Build to Security,
+Firestore moved to Databases, Hosting moved to Hosting
+& Serverless. A click-path brief would have stalled at
+each drift; the requirement-shaped sections sailed
+through.
+
+See `BRIEF-TEMPLATE.md` §1a for the canonical form. The
+two-section pattern (Requirement + dated Current path)
+makes future updates "refresh the breadcrumb," not
+"rewrite from scratch."
+
+### 6.6 Implementer stream stalls
 
 Periodically, an implementer cuttlefish's stream
 times out mid-execution. Happened on Dispatch 1 (Admin

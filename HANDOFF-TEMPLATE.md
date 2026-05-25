@@ -215,7 +215,7 @@ no, expand.
 
 Write the handoff **after** gates pass and **before** any final
 polish or end-of-work-chat-summary. Treat the handoff itself as
-part of "done." Per WORKING-MODEL.md §6.5 (the stall lesson):
+part of "done." Per WORKING-MODEL.md §6.6 (the stall lesson):
 writing the handoff early survives implementer stream stalls. If
 the implementer's stream times out after the handoff is written,
 the most important artifact is already on disk.

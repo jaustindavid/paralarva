@@ -127,14 +127,19 @@ In this order:
    (design → BACKLOG → brief → pre-read → implementer → handoff),
    the patterns, the antipatterns, the stall-recovery and
    post-ship-fix protocols. This is your day-to-day reference.
-3. **`HANDOFF-TEMPLATE.md`** — the shape of every dispatch handoff
-   doc your cuttlefish will produce.
-4. **`BACKLOG-TEMPLATE.md`** — the working list structure (horizons,
+3. **`BRIEF-TEMPLATE.md`** — the shape of every dispatch brief you
+   write. Includes the load-bearing principles: describe
+   requirements not click paths, cold-readable, the canonical
+   section structure.
+4. **`HANDOFF-TEMPLATE.md`** — the shape of every dispatch handoff
+   doc your cuttlefish will produce. Brief + handoff are a matched
+   pair.
+5. **`BACKLOG-TEMPLATE.md`** — the working list structure (horizons,
    size tags, status conventions). The template is empty; you'll
    populate it as design conversations happen.
-5. **`PRD-TEMPLATE.md`** — the empty PRD shape. You'll interview the
+6. **`PRD-TEMPLATE.md`** — the empty PRD shape. You'll interview the
    owner and fill this in.
-6. **`AGENTS-TEMPLATE.md`** — codebase guardrails template for any
+7. **`AGENTS-TEMPLATE.md`** — codebase guardrails template for any
    coding agent (Claude Code, Cursor, etc.) picking up the project.
    You'll customize it after the PRD settles.
 
@@ -186,6 +191,50 @@ the design conversation that should happen now while the product is
 soft clay. Capture decisions as you go; the PRD draft pulls from
 this conversation.
 
+### Step 2.5: save memory files during the interview
+
+The owner interview is the **single best moment** to seed
+Claude Code's project memory files. The owner's identity,
+collaboration preferences, and project-state-at-hatch all surface
+naturally during the conversation. Writing them down costs ~5
+minutes now; the payoff is that every future nautilus session
+auto-loads these and cold-starts in seconds rather than 30
+minutes of doc-and-transcript archaeology.
+
+Save at minimum three memory files (formats are plain prose; no
+templates needed — the existence of the convention is what
+matters):
+
+- **`user_<owner-name>.md`** — owner identity, role, related /
+  sibling projects, how they prefer to be addressed, anything
+  context-shaping. Example: "Austin David, solo operator, also
+  runs Route7 (sibling project). Prefers terse responses; reads
+  carefully and pushes back when something's off."
+- **`feedback_collaboration.md`** — owner's stated collaboration
+  preferences. Example: "Lead with intent; flag assumptions
+  explicitly; push back on internal contradictions rather than
+  papering over them; XS fixes stay in-scope of current
+  dispatch, M+ files as follow-up."
+- **`project_<name>_bootstrap.md`** — project state at hatch:
+  what got decided so far, what's still open, what tech stack /
+  scale / privacy posture landed. Evolves as decisions
+  accumulate during and after the interview.
+
+Maintain a top-level **`MEMORY.md`** index pointing at the
+three. Use reciprocal `[[link]]` references between memory files
+where they cross-reference each other.
+
+These files live where Claude Code expects them (your harness's
+memory directory; check your client's docs if you're not sure).
+They're auto-loaded into context for fresh sessions — cold-start
+time for any future nautilus drops dramatically when they
+exist.
+
+**Worth doing during the interview**, not after. The interview
+surfaces all three categories of information; capturing as you
+go is essentially free. Capturing later requires re-deriving
+context that was already in front of you.
+
 ### Step 3: draft the PRD
 
 Using `PRD-TEMPLATE.md` as the structural shape, fill in each
@@ -202,20 +251,59 @@ sustainability posture is.
 ### Step 4: settle infrastructure questions
 
 Most projects need some infrastructure: hosting, auth, database,
-deploy pipeline. If the PRD settles on Firebase + GCP (the default
-proven stack), draft an **infrastructure setup dispatch** as your
-first ops dispatch. The Route7 nautilus has rake-stepped this
-particular setup and can review your draft before you execute —
-ask the owner to bring it back to them for sanity-check. The
-specific gotchas the Route7 nautilus knows include: OAuth consent
-screen email constraints, logo-triggers-verification, three
-separate "authorized domains" lists across Firebase+GCP that don't
-sync, custom domain DNS recipes, Cloudflare-vs-Let's-Encrypt
-patterns.
+deploy pipeline. The first ops dispatch (often called "M1" or
+similar) sets all of this up. Some specific notes about M1
+because it is **structurally the highest-friction dispatch**
+your project will encounter:
 
-If the stack is different (AWS, Vercel, something else), you're on
-your own for the infrastructure dispatch — but the dispatch
-*pattern* (brief → pre-read → implement → handoff) still applies.
+**Expect M1 to take 2-4× the per-milestone budget.** External
+console UIs reorganize constantly (one execution session can
+encounter 5+ UI drifts). Tooling questions surface that you
+couldn't have anticipated. Cross-nautilus consults add review
+cycles. Real-time troubleshooting via chat is the norm, not
+the exception. This is the working model functioning correctly,
+not a process failure.
+
+**The cross-nautilus consult is non-negotiable for M1.** The
+kit's cross-nautilus pattern (see "Cross-nautilus consultation"
+section below) exists specifically for this dispatch. If you're
+on Firebase + GCP, the Route7 nautilus has rake-stepped the
+setup and can review your M1 brief before execution. Even a
+30-minute review saves hours of rake-stepping.
+
+**Document deviations liberally** during M1. The handoff's
+"Deviations from dispatch" section earns its keep here above
+all others — the brief-vs-reality gap is widest on first
+dispatches. Capture every brief assumption that didn't survive
+contact.
+
+**§15 "Cross-project feedback channel" will populate heavily**
+during M1. Plan to file rakes / UI drifts / kit improvements
+as they occur, not at end-of-dispatch. The flog M1 generated
+two paralarva-improvement feedback docs and an entire reusable
+runbook — that's the right cadence.
+
+**The M1 brief is starting material, not a complete runbook.**
+Real-time troubleshooting via chat is where the brief becomes
+operational. Plan for it.
+
+**For Firebase + GCP specifically**: a canonical reusable
+runbook exists at flog's `dispatch/runbooks/gcp-firebase-env-setup.md`
+(produced after flog's M1 shipped). When you reach the
+cross-nautilus consult, ask the Route7 nautilus to share or
+reference this runbook — it captures the load-bearing
+requirements + dated breadcrumbs + the rakes catalogue from
+flog's M1 execution. Much better than re-discovering each rake.
+
+If the stack is different (AWS, Vercel, something else), you're
+on your own for the infrastructure dispatch — but the dispatch
+*pattern* (brief → pre-read → implement → handoff) still
+applies, the brief-authoring principles in `BRIEF-TEMPLATE.md`
+still apply (especially: describe requirements not click
+paths), and the cross-nautilus consult pattern still works
+even if the reviewer-nautilus's stack isn't yours (they can
+catch process issues even when they can't catch
+stack-specific gotchas).
 
 ### Step 5: first product dispatch
 
@@ -223,6 +311,12 @@ After PRD + infrastructure are settled, the first user-facing
 dispatch ships. Follow the standard pattern from WORKING-MODEL.md.
 The BACKLOG starts accumulating real items; the project hatches
 into its independent lifecycle.
+
+Subsequent dispatches will be **much faster** than M1. The
+infrastructure works; the brief structure has proven itself;
+cuttlefish dispatch is unsurprising. The friction asymmetry
+between M1 and M2+ is real and worth setting expectations for
+both yourself and the owner.
 
 ---
 
