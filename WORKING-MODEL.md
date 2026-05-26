@@ -167,9 +167,143 @@ dispatch where it ran. Examples:
 The cost-to-value ratio of pre-read is heavily favorable.
 Skip with caution.
 
+**Re-read after substantive fixes.** When pre-read finds
+three or more blocking issues and the nautilus folds them
+in, **spawn a second pre-read pass** before handing to the
+implementer. The fix-cycle introduces its own drift —
+prose updates without matching AC updates, new
+contradictions, accidentally re-introduced bugs. The
+second pass is cheap (a focused "verify each fix landed
+cleanly + no new issues introduced" prompt) and reliably
+catches AC-vs-prose drift that a single-pass review
+misses. Heuristic threshold: 3 blocking issues warrants
+re-read; fewer is judgment-call. This pattern has caught
+real residual drift on every dispatch where it's run.
+
 ---
 
-## 4. The fresh-head principle
+## 4. Fact-finder — verifying external API assumptions
+
+The fact-finder pattern: before drafting a brief that
+relies on specific behavior of an external API or SDK,
+spawn a **read-only research cuttlefish** to verify those
+behaviors against the actual documentation (and, when
+docs are ambiguous, against a small scratch probe). The
+output is a fact-sheet that informs the brief; the brief
+then carries the verified-and-incorporated findings into
+the implementer's hands.
+
+**Why this is separate from pre-read**: pre-read
+verifies internal consistency — does the brief match the
+codebase? Fact-finder verifies external assumptions —
+does the API actually work the way the brief assumes?
+The two are complementary; both can run on the same
+dispatch.
+
+**When to invoke**:
+
+- Any dispatch touching an external API or SDK that
+  hasn't been recently exercised (Google Maps Platform
+  variants, Firebase products newly reached for, third-
+  party libraries)
+- Any time the brief says "the SDK supports X" or
+  "Google's API does Y" without recent verification
+- Especially: APIs with known quirks (Maps Platform's
+  legacy-vs-new variants, anything with documented but
+  rarely-exercised behaviors like InfoWindow lifecycle
+  semantics or `next_page_token` requirements)
+
+**When NOT to invoke**:
+
+- Pure internal work (reducer changes, UI in existing
+  patterns, persistence-shape changes that don't touch
+  external APIs)
+- Dispatches where the API surface has been exercised
+  by a recent dispatch the nautilus has full context on
+
+**How to spawn**: similar shape to pre-read. The prompt
+names the brief, names the specific API behaviors to
+verify, asks for a fact-sheet with explicit "assumption
+X is correct/incorrect" callouts. Reviewer is explicitly
+told NOT to write code; output is documentation reading +
+synthesis only.
+
+**Owner cost model — why this pattern is worth invoking
+aggressively**: from the project owner's perspective,
+read-only cuttlefish (design pass, fact-finder, pre-read,
+re-read) are effectively free — they spawn, run, and
+produce reports without consuming owner attention. The
+expensive failures are at the implementer stage, and
+there are TWO of them: implementer **stalls** (obvious;
+requires triage attention + recovery cycle) AND
+implementer **ships bugs that escape** (subtler; each
+becomes a future debug+fix dispatch). Both share a root
+cause: inadequate pre-flight preparation. The pre-flight
+pipeline exists to protect the implementer from both
+failure modes — completing AND shipping clean on the
+first attempt.
+
+Practical implication: spawn read-only agents
+aggressively; don't deliberate about whether to invoke.
+Multiple pre-read passes on the same brief are
+explicitly fine. The cost of a fact-finder run that
+finds nothing is small; the cost of a missed API
+gotcha that stalls an implementer mid-stream (or worse,
+ships a defect) is much larger.
+
+**Real evidence**:
+
+- Google Places API InfoWindow doesn't auto-close other
+  InfoWindows; the natural implementation shape (one
+  InfoWindow per marker) would have been wrong. Fact-
+  finder caught this from the docs before the brief was
+  written.
+- Google Places API legacy JS library doesn't expose
+  `next_page_token` as a string (opaque pagination
+  object); a brief that designed cross-session
+  pagination around a stored string would have stalled
+  the implementer in a self-doubt loop. (This case was
+  surfaced reactively after a stall, not preemptively;
+  the fact-finder pattern was filed specifically because
+  this miss was expensive.)
+- Tailwind utility classes don't reliably resolve inside
+  Google's managed InfoWindow DOM context; inline
+  `style` attributes are required. Fact-finder caught
+  this; brief specified inline-style from the start;
+  implementer shipped clean.
+
+**Recommended pre-flight pipeline** (each step optional
+based on dispatch shape):
+
+```
+[design pass: internal integration]      ← if new feature
+                                            with significant
+                                            code-shape questions
+       ↓
+[fact-finder: external API behavior]     ← if external API
+                                            surface is touched
+       ↓
+draft brief (nautilus)
+       ↓
+[pre-read: brief consistency + facts]    ← effectively always
+       ↓
+fold fixes (nautilus)
+       ↓
+[re-read: verify fixes + check drift]    ← if pre-read found
+                                            3+ blocking issues
+       ↓
+implementer
+```
+
+For pure-internal small dispatches: pre-read alone is
+usually sufficient. For external-API dispatches: at
+minimum fact-finder + pre-read. For complex new features
+spanning multiple integration points: design pass first,
+then both.
+
+---
+
+## 5. The fresh-head principle
 
 Every markdown deliverable in projects derived from this
 kit opens with the same preamble (project-name and
@@ -207,7 +341,7 @@ history.
 
 ---
 
-## 5. Operational conventions
+## 6. Operational conventions
 
 Patterns that have emerged across dispatches and now
 function as defaults. Deviation requires a reason; the
@@ -257,7 +391,7 @@ paper over.
 
 **Handoff before polish.** As soon as gates pass,
 implementer writes the handoff — before doing any
-"while I'm here" cleanup. This survives stalls (see §7).
+"while I'm here" cleanup. This survives stalls (see §8).
 Then do the BACKLOG move as the final step.
 
 **No git commits by agents.** Nautilus and cuttlefish
@@ -266,7 +400,7 @@ git tree is the owner's source of truth.
 
 ---
 
-## 6. Antipatterns we've learned to avoid
+## 7. Antipatterns we've learned to avoid
 
 These are real lessons from real dispatches. Some of
 them pull in opposite directions; that's noted
@@ -399,7 +533,7 @@ dispatch. Pattern: the code is complete; gates pass; the
 stream stalls before the handoff doc is written.
 
 This isn't a defect to fix; it's a property of the
-system to plan around. See §7 for the recovery
+system to plan around. See §8 for the recovery
 protocol.
 
 The instruction "write the handoff immediately when
@@ -410,7 +544,7 @@ nautilus has to reconstruct.
 
 ---
 
-## 7. Stall-recovery protocol
+## 8. Stall-recovery protocol
 
 When an implementer cuttlefish stalls (stream-watchdog
 timeout), the nautilus runs this sequence:
@@ -444,7 +578,7 @@ the same artifacts in the same locations.
 
 ---
 
-## 8. Post-ship-fix protocol
+## 9. Post-ship-fix protocol
 
 After a dispatch ships, the owner sometimes finds a
 small issue during validation. The protocol depends on
@@ -506,7 +640,7 @@ self-contained piece of work.
 
 ---
 
-## 9. Tools and where they live
+## 10. Tools and where they live
 
 - **Briefs**: `dispatch/<name>.md` (per dispatch)
 - **Handoffs**: `dispatch/<name>-handoff.md` (per
@@ -526,7 +660,7 @@ A typical dispatch leaves behind two files in
 
 ---
 
-## 10. What this doc is NOT
+## 11. What this doc is NOT
 
 - **Not a substitute for the cuttlefish/nautilus paper**,
   which establishes the conceptual frame (why this
@@ -544,7 +678,7 @@ A typical dispatch leaves behind two files in
 
 ---
 
-## 11. When to update this doc
+## 12. When to update this doc
 
 When a new pattern earns its keep (used 2-3 times,
 clearly distinct from existing patterns) — add it. When
